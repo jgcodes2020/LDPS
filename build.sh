@@ -11,6 +11,6 @@ cd $(dirname $SOURCE)
 mkdir -p build/DEBIAN
 cp -vp control/* build/DEBIAN/
 
-mkdir -p build/usr/local/bin
-cp -v ldps build/usr/local/bin/
+mkdir -p build/usr/bin
+cp -v ldps build/usr/bin/
 dpkg-deb -b build ldps.deb
