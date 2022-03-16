@@ -1,0 +1,2 @@
+#!/usr/bin/sh
+mkdir -p /etc/ldps/autoupdate.d

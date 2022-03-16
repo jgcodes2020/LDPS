@@ -9,8 +9,8 @@ DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
 cd $(dirname $SOURCE)
 
 mkdir -p build/DEBIAN
-cp control/* build/DEBIAN/
+cp -vp control/* build/DEBIAN/
 
 mkdir -p build/usr/local/bin
-cp ldps build/usr/local/bin/
+cp -v ldps build/usr/local/bin/
 dpkg-deb -b build ldps.deb
