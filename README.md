@@ -6,3 +6,4 @@ LDPS (Local Debian Package System) makes it easy to manage a local repository on
 - Installation must be done manually.
   - Copy `ldps` to `/usr/local/bin/ldps`.
   - Update scripts go to `/etc/ldps/autoupdate.d`
+- A malicious party has the ability to execute scripts as root, which is highly insecure.
