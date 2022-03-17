@@ -59,16 +59,22 @@ def update(args):
         piper = Thread(target=stream_piper, args=(proc.stdout, file, True))
         piper.start()
         piper.join()
-        
 
+def main():
+    args = parser.parse_args()
+    if args.subcommand is None:
+        parser.print_help()
+    else:
+        try:
+            args.callback(args)
+        except subp.CalledProcessError as e:
+            print(f"Error in process {e.cmd}: return code {e.returncode}")
+            sys.exit(e.returncode)
 
-
-args = parser.parse_args()
-if args.subcommand is None:
-    parser.print_help()
+if __name__ == "__main__":
+    main()
 else:
-    try:
-        args.callback(args)
-    except subp.CalledProcessError as e:
-        print(f"Error in process {e.cmd}: return code {e.returncode}")
-        sys.exit(e.returncode)
+    raise ImportError(
+        f"{'ldps.cli' if __name__ == 'ldps.cli' else f'ldps.cli (aliased to {__name__})'} should never be imported", 
+        __name__, __file__
+    )
