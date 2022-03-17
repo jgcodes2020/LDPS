@@ -27,13 +27,17 @@ def stream_piper(input: io.FileIO, output: io.FileIO, binary=False):
         for line in iter(input.readline, b''):
             output.write(line)
 
-def subcommand(help="", args=[], parent=subparsers):
+def subcommand(help=None, args=[], parent=subparsers):
     def decorator(callback):
-        parser = None
-        if help is None:
-            parser = parent.add_parser(callback.__name__)
-        else:
-            parser = parent.add_parser(callback.__name__, help=help, description=help)
+        # Optional keyword args
+        kwargs = {}
+        if help is not None: 
+            kwargs["help"] = help
+        if callback.__doc__ is not None: 
+            kwargs["description"] = callback.__doc__
+        # setup parser with kwargs
+        parser = parent.add_parser(callback.__name__)
+        
         for arg in args:
             parser.add_argument(*arg[0], **arg[1])
         parser.set_defaults(callback=callback)
@@ -42,8 +46,12 @@ def subcommand(help="", args=[], parent=subparsers):
 # SUBCOMMANDS
 # =======================
 
-@subcommand("Update the local package registry so that APT recognizes it.")
+@subcommand("Downloads updated packages and updates the catalog.")
 def update(args):
+    """
+    Runs auto-update scripts in \033[1m/etc/ldps/autoupdate.d\033[0m, then
+    regenerates the package catalog.
+    """
     if os.geteuid() != 0:
         print("LDPS needs root privileges to update the local repository.")
         print(f"Try: sudo {shlex.join(sys.argv)}")
@@ -70,11 +78,3 @@ def main():
         except subp.CalledProcessError as e:
             print(f"Error in process {e.cmd}: return code {e.returncode}")
             sys.exit(e.returncode)
-
-if __name__ == "__main__":
-    main()
-else:
-    raise ImportError(
-        f"{'ldps.cli' if __name__ == 'ldps.cli' else f'ldps.cli (aliased to {__name__})'} should never be imported", 
-        __name__, __file__
-    )

@@ -1,2 +1,2 @@
-build/
-*.deb
+dist/
+**/*.egg-info/
