@@ -4,6 +4,8 @@ import subprocess as subp
 import ldps.utils as utils
 from textwrap import dedent
 
+import ldps.utils as utils
+
 DEB_PATH = "/usr/local/debs/wezterm.deb"
 
 
