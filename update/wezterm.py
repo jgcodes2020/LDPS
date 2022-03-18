@@ -2,20 +2,13 @@ import tempfile, re, requests, sys
 from pathlib import Path, PurePath
 import subprocess as subp
 
+import ldps.utils as utils
+
 DEB_PATH = "/usr/local/debs/wezterm.deb"
 
-def download(url: str, path: Path):
-    r = requests.get(url)
-    len = int(r.headers['Content-Length'])
-    with open(path, "wb") as file:
-        for count, chunk in enumerate(r.iter_content(chunk_size=1024)):
-            file.write(chunk)
-            sys.stdout.write(f"\033[1G\033[2KDownloading from {url} ({((count * 1024) / len) * 100:.2f}%)...")
-            sys.stdout.flush()
-    print()
 
 
-print("Finding latest wezterm release...")
+print("Grabbing latest release info for wezterm...")
 
 r = requests.get("https://api.github.com/repos/wez/wezterm/releases/latest",
     headers = {
@@ -24,7 +17,7 @@ r = requests.get("https://api.github.com/repos/wez/wezterm/releases/latest",
 )
 
 dl_asset = next(i for i in r.json()["assets"] if i["name"].endswith("Ubuntu20.04.deb"))
-download(dl_asset['browser_download_url'], DEB_PATH)
+utils.download(dl_asset['browser_download_url'], DEB_PATH)
 
 # PATCHING
 # ============

@@ -1,22 +1,13 @@
 import requests, tempfile, re, sys
 from pathlib import Path, PurePath
 import subprocess as subp
+from textwrap import dedent
+
+import ldps.utils as utils
 
 DEB_PATH = "/usr/local/debs/wezterm-nightly.deb"
 
-def download(url: str, path: Path):
-    r = requests.get(url)
-    len = int(r.headers['Content-Length'])
-    with open(path, "wb") as file:
-        for count, chunk in enumerate(r.iter_content(chunk_size=1024)):
-            file.write(chunk)
-            print(f"\033[1F\033[1E\033[2KDownloading from {url} ({((count * 1024) / len) * 100:.2f}%)...", end='')
-    print()
-            
-
-
-print("Finding latest wezterm release...")
-
+print("Grabbing release info for wezterm/nightly...")
 r = requests.get("https://api.github.com/repos/wez/wezterm/releases/tags/nightly",
     headers = {
         "Accept": "applications/vnd.github.v3+json"
@@ -24,7 +15,7 @@ r = requests.get("https://api.github.com/repos/wez/wezterm/releases/tags/nightly
 )
 
 dl_asset = next(i for i in r.json()["assets"] if i["name"].endswith("Ubuntu20.04.deb"))
-download(dl_asset['browser_download_url'], DEB_PATH)
+utils.download(dl_asset['browser_download_url'], DEB_PATH)
 
 # PATCHING
 # ============
@@ -51,7 +42,7 @@ with tempfile.TemporaryDirectory() as temp_str:
     subp.run(["dpkg-deb", "-R", DEB_PATH, temp_str]).check_returncode()
     
     # Patch control file
-    print(f"Patching {Path(DEB_PATH).name}")
+    print(f"Patching control in {Path(DEB_PATH).name}")
     ctl_lines = None
     with open(temp_path / "DEBIAN/control", "r+") as ctl_file:
         ctl_lines = ctl_file.readlines()
@@ -62,6 +53,42 @@ with tempfile.TemporaryDirectory() as temp_str:
         ctl_file.truncate(0)
         ctl_file.seek(0)
         ctl_file.writelines(ctl_lines)
+    
+    # Patch postinst
+    print(f"Patching postinst in {Path(DEB_PATH).name}")
+    created_file = False
+    with open(temp_path / "DEBIAN/postinst", "a") as pi_script:
+        if pi_script.tell() == 0:
+            created_file = True
+            pi_script.write("#!/bin/sh\n")
+        pi_script.write(dedent("""
+        set -e
+        if [ "$1" = "configure" ]; then
+            update-alternatives --install /usr/bin/x-terminal-emulator \
+            x-terminal-emulator /usr/bin/wezterm 40
+        fi
+        """))
+    if created_file:
+        utils.chmod_px(temp_path / "DEBIAN/postinst")
+    
+    # Patch prerm
+    print(f"Patching prerm in {Path(DEB_PATH).name}")
+    created_file = False
+    with open(temp_path / "DEBIAN/prerm", "a") as pi_script:
+        if pi_script.tell() == 0:
+            created_file = True
+            pi_script.write("#!/bin/sh\n")
+        pi_script.write(dedent("""
+        set -e
+        if [ "$1" = "configure" ]; then
+            update-alternatives --remove x-terminal-emulator /usr/bin/wezterm
+        fi
+        """))
+    if created_file:
+        utils.chmod_px(temp_path / "DEBIAN/prerm")
+    
+    
+    
     # Repack deb
     print(f"Repacking {Path(DEB_PATH).name}")
     subp.run(["dpkg-deb", "-b", temp_str, DEB_PATH]).check_returncode()
