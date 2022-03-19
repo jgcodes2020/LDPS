@@ -6,9 +6,8 @@ import os
 import shlex
 import subprocess as subp
 import gzip
-from pathlib import Path, PurePath
+from pathlib import Path
 import sys
-import typing
 from threading import Thread
 
 parser = ArgumentParser(description="The Local Debian Package System (LDPS) manages packages on your local filesystem.")
@@ -42,6 +41,12 @@ def subcommand(help=None, args=[], parent=subparsers):
             parser.add_argument(*arg[0], **arg[1])
         parser.set_defaults(callback=callback)
     return decorator
+
+def check_setup():
+    autoupdate_exists = Path("/etc/ldps/autoupdate.d").is_dir()
+    repo_exists = Path("/usr/local/debs").is_dir()
+    
+    return autoupdate_exists and repo_exists
 
 # SUBCOMMANDS
 # =======================
